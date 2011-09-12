@@ -4,6 +4,6 @@ import HEP.Automation.MadGraph.LHECleaner.Type
 import HEP.Automation.MadGraph.LHECleaner.Job
 
 commandLineProcess :: LHECleaner -> IO ()
-commandLineProcess Test = do 
+commandLineProcess (Test fn) = do 
   putStrLn "test called"
-  startJob
+  startJob fn

@@ -1,7 +1,9 @@
 Name:		LHECleaner
 Version:	0.0
-Synopsis:	
-Description: 	
+Synopsis:	cleaning LHE file for feeding PYTHIA
+Description: 	PYTHIA often crashes when an input from MadEvent has some
+                irregularities in its LHE output file. This simple program 
+                cleans up those irregularities. 
 License: 	BSD3
 License-file:	LICENSE
 Author:		Ian-Woo Kim
@@ -14,8 +16,8 @@ data-files:
 Executable lhecleaner
   Main-is: lhecleaner.hs
   hs-source-dirs: exe
-  ghc-options: 	-Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
-  ghc-prof-options: -caf-all -auto-all
+  ghc-options: 	-Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind -rtsopts
+  ghc-prof-options: -caf-all -auto-all -rtsopts
   Build-Depends: 
                    base>4, mtl>2, directory, filepath,
                    cmdargs, LHECleaner
@@ -25,12 +27,14 @@ Library
   ghc-options: 	-Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
   ghc-prof-options: -caf-all -auto-all
   Build-Depends: 
-                   base>4, mtl>2, directory, filepath,
-                   cmdargs
+                   base>4, mtl>2, transformers>0.2.2,directory, filepath,
+                   cmdargs, LHEParser, attoparsec, bytestring, 
+                   enumerator, enumerator-util
   Exposed-Modules: 
                    HEP.Automation.MadGraph.LHECleaner.Type
                    HEP.Automation.MadGraph.LHECleaner.Job
                    HEP.Automation.MadGraph.LHECleaner.Command
+                   HEP.Automation.MadGraph.LHECleaner.Parse
   Other-Modules: 
 
  
