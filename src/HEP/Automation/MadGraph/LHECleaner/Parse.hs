@@ -3,28 +3,27 @@
 
 module HEP.Automation.MadGraph.LHECleaner.Parse where
 
-import Data.Enumerator as E hiding (head,dropWhile,map)
-import qualified Data.Enumerator.List as EL
-
 import Control.Monad as M
 import Control.Monad.IO.Class
 import Control.Monad.State hiding (sequence)
-import Text.XML.Enumerator.Parse.Util
+
+import Data.Enumerator as E hiding (head,dropWhile,map)
+import qualified Data.Enumerator.List as EL
+import Data.Enumerator.Util 
+import qualified Data.Map as M
+import Data.IORef
 
 import HEP.Parser.LHEParser.Parser.Enumerator
-
 import HEP.Parser.LHEParser.Type 
 import HEP.Parser.LHEParser.DecayTop
 
+import Text.XML.Enumerator.Parse.Util
 import System.IO 
-
-import qualified Data.Map as M
-
-import qualified Data.Foldable as F
-
 import Prelude hiding (dropWhile,takeWhile,sequence)
 
-import Data.Enumerator.Util 
+------------------------------------
+-- Counting
+------------------------------------
 
 class (Monad m, MonadIO m) => MonadCount m where 
   getCounter :: m Int 
@@ -57,6 +56,11 @@ countMarkerIter = do
     Just _ -> countMarkerIter 
 
 
+
+--------------------------------------
+-- Printing
+--------------------------------------
+
 printIter :: (MonadIO m, Show s) => Iteratee s m () 
 printIter = do 
   elm <- EL.head
@@ -66,24 +70,8 @@ printIter = do
       liftIO . putStrLn $ show c
       printIter 
 
-doNIter :: (MonadIO m) => Int -> (s -> IO ()) -> Iteratee s m () 
-doNIter n action
-  | n > 0 = do 
-    elm <- EL.head
-    case elm of 
-      Nothing -> return ()
-      Just c -> do 
-        liftIO $ action c
-        doNIter (n-1) action
-  | otherwise = return () 
-
 printNIter :: (MonadIO m, Show s) => Int -> (s -> String) -> Iteratee s m () 
 printNIter n formatter = doNIter n (putStrLn . formatter)
-
-
-
-
-
 
 printSatisfying :: (MonadIO m, Show s) => (s->Bool) -> Iteratee s m ()
 printSatisfying f = do 
@@ -97,24 +85,57 @@ printSatisfying f = do
       printSatisfying f  
 
 
+simpleFormatter :: (Show s) => s -> String 
+simpleFormatter s = "---------------------\n" ++ show s ++ "\n"
 
-doBranch :: (MonadIO m) => 
-            (s -> (Bool,s')) 
-             -> ((s,s') -> IO ()) 
-             -> ((s,s') -> IO ()) 
-             -> Iteratee s m ()
-doBranch criterion taction faction = do 
+--------------------------------------
+-- Control Structure
+--------------------------------------
+
+doNIter :: (MonadIO m) => Int -> (s -> IO ()) -> Iteratee s m () 
+doNIter n action
+  | n > 0 = do 
     elm <- EL.head
     case elm of 
       Nothing -> return ()
       Just c -> do 
-        let (b,c') = criterion c 
-        if b 
-          then liftIO $ taction (c,c')
-          else liftIO $ faction (c,c')
+        liftIO $ action c
+        doNIter (n-1) action
+  | otherwise = return () 
+
+doBranch :: (MonadIO m) => 
+            (s -> (Bool,s')) 
+             -> (s' -> IO ()) 
+             -> (s' -> IO ()) 
+             -> Iteratee (Maybe s) m ()
+doBranch criterion taction faction = do 
+    elm <- EL.head
+    case elm of 
+      Nothing -> return ()
+      Just maybec -> do 
+        case maybec of 
+          Just c -> do 
+            let (b,c') = criterion c 
+            if b 
+              then liftIO $ taction c'
+              else liftIO $ faction c'
+          Nothing -> return ()
         doBranch criterion taction faction 
   
- 
+---------------------------------
+-- stream mapping
+--------------------------------- 
+
+takeEnee :: (Monad m) => Int -> Enumeratee s s m a
+takeEnee n = checkDone (continue . (step n)) where
+  step _ k EOF = yield (Continue k) EOF
+  step num k (Chunks xs) = loop num k xs 
+
+  loop num k [] | num > 0 = continue (step num k)
+  loop num k (x:xs) | num > 0 = do 
+    k (Chunks [x]) >>== 
+      checkDoneEx (Chunks xs) (\k' -> loop (num-1) k' xs)
+  loop _ k _ | otherwise = yield (Continue k) EOF
 
 
 -- action2 ::Iteratee [Event] CountIO (Int,()) 
@@ -131,35 +152,53 @@ action4 = enumZip4 countIter countMarkerIter E.length printIter
 ------------------------------
 ------------------------------
 
-getDecayTop :: LHEvent -> ([DecayTop PtlIDInfo])
-getDecayTop (LHEvent einfo pinfos) = 
+getDecayTop :: LHEvent -> (LHEvent,PtlInfoMap,[DecayTop PtlIDInfo])
+getDecayTop ev@(LHEvent _einfo pinfos) = 
   let pmap = M.fromList (Prelude.map (\x->(idee x,x)) pinfos)
       dtops = mkFullDecayTop (mkIntTree pinfos)
       ptlidinfotop = fmap (mkDecayPDGExtTop pmap) dtops 
 --      pdgidtop = fmap (mkDecayPDGTop pmap) dtops 
-  in  ptlidinfotop
+  in  (ev,pmap,ptlidinfotop)
   
 -- lheparseaction = 
-decayTopEnee :: (Monad m) => Enumeratee (Maybe LHEvent) (Maybe [DecayTop PtlIDInfo]) m a
+decayTopEnee :: (Monad m) => Enumeratee (Maybe LHEvent) (Maybe (LHEvent,PtlInfoMap,[DecayTop PtlIDInfo])) m a
 decayTopEnee = EL.map (fmap getDecayTop)  
 
+checkAndFilterOnShell :: PDGID 
+                      -> (LHEvent,PtlInfoMap,[DecayTop PtlIDInfo]) 
+                      -> (Bool,(LHEvent,PtlInfoMap,[DecayTop PtlIDInfo]))
+checkAndFilterOnShell pid (ev,pmap,dtops) = 
+  let dtops' = filterOnShellFromDecayTop pid dtops 
+  in  ((not.null) dtops',(ev,pmap,dtops'))
 
-findOnShell :: PDGID -> [DecayTop PtlIDInfo] -> [DecayTop PtlIDInfo]  
-findOnShell pid lst =
-  let findOnShellWkr x acc = 
+
+filterOnShellFromDecayTop :: PDGID 
+                         -> [DecayTop PtlIDInfo] 
+                         -> [DecayTop PtlIDInfo]  
+filterOnShellFromDecayTop pid lst =
+  let worker x acc = 
         case x of 
           Decay (PIDInfo pid' _, _) -> if (pid==pid') then x:acc else acc
           _ -> acc
-  in  foldr findOnShellWkr [] lst 
+  in  foldr worker [] lst 
 
 getPtlID :: DecayTop PtlIDInfo -> PtlID
 getPtlID (Decay (pidinfo,_)) = ptlid . ptlinfo $ pidinfo 
 getPtlID x = error $ "in getPtlID " ++ (show x)
 
 
-simpleFormatter :: (Show s) => s -> String 
-simpleFormatter s = "---------------------\n" ++ show s ++ "\n"
+offShellAction :: (LHEvent,PtlInfoMap,[DecayTop PtlIDInfo]) -> IO () 
+offShellAction _ = return () -- putStrLn "offshell"
 
+onShellAction :: IORef Int -> (LHEvent,PtlInfoMap,[DecayTop PtlIDInfo]) -> IO ()
+onShellAction ref (ev,pmap,dtops) = do 
+  let eraserlist = map getPtlID dtops
+  putStrLn "----------------------"
+  st <- readIORef ref
+  st `seq` writeIORef ref (st+1)
+
+-- putStrLn "onShell"
+ 
 -- extractOnShellParticle :: 
 
 -------------------------------
@@ -171,8 +210,10 @@ simpleFormatter s = "---------------------\n" ++ show s ++ "\n"
 
 -- boolfunc = foldMap (isOnShell 9000006) 
 
-boolfunc (Just x) = (not . null . findOnShell 9000006) x
-boolfunc Nothing  = False
+
+
+-- boolAndOnShellDecay Nothing  = Nothing 
+
 
 -- action6 = enumZip3 countIter countMarkerIter (printNIter 100)
 
@@ -181,25 +222,26 @@ boolfunc Nothing  = False
 -- (fmap (isOnShell 9000006)) ) 
 
 
- 
 
 parseLHEFile :: FilePath -> IO () 
 parseLHEFile fn = do 
-  let iter = parseEventIter process
- --     someAction = doNIter 10 (putStrLn . simpleFormatter . fmap (map getPtlID))
-      someAction = doNIter 10 (putStrLn . simpleFormatter . fmap (Prelude.length))
-      processinside = decayTopEnee =$ E.filter boolfunc =$ someAction
-
--- printNIter 10 simpleFormatter 
+  ref <- newIORef 0
+  let iter = parseEventIter (takeEnee 100 =$ process)
       process = enumZip3 processinside countIter countMarkerIter
-
-
+      someAction = doBranch (checkAndFilterOnShell 9000006) (onShellAction ref) offShellAction
+      processinside = decayTopEnee =$ someAction
   r <- withFile fn ReadMode $ \h -> 
          flip runStateT (0::Int) (parseXmlFile h iter)
-
- 
-  putStrLn $ show r 
+  putStrLn $ show r
+  result <- readIORef ref 
+  putStrLn $ show result
   return ()
 
+ --     someAction = doNIter 10 (putStrLn . simpleFormatter . fmap (map getPtlID))
+--      someAction = doNIter 10 (putStrLn . simpleFormatter . fmap (Prelude.length))
 
+-- printNIter 10 simpleFormatter 
+
+
+--      process = countIter
   
