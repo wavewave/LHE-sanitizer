@@ -35,6 +35,7 @@ Library
                    HEP.Automation.MadGraph.LHECleaner.Job
                    HEP.Automation.MadGraph.LHECleaner.Command
                    HEP.Automation.MadGraph.LHECleaner.Parse
+                   HEP.Automation.MadGraph.LHECleaner.Replace
   Other-Modules: 
 
  

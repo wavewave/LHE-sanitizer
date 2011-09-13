@@ -13,9 +13,13 @@ import Data.Enumerator.Util
 import qualified Data.Map as M
 import Data.IORef
 
+import Data.Maybe
+
 import HEP.Parser.LHEParser.Parser.Enumerator
 import HEP.Parser.LHEParser.Type 
 import HEP.Parser.LHEParser.DecayTop
+
+import HEP.Automation.MadGraph.LHECleaner.Replace
 
 import Text.XML.Enumerator.Parse.Util
 import System.IO 
@@ -192,7 +196,15 @@ offShellAction _ = return () -- putStrLn "offshell"
 
 onShellAction :: IORef Int -> (LHEvent,PtlInfoMap,[DecayTop PtlIDInfo]) -> IO ()
 onShellAction ref (ev,pmap,dtops) = do 
-  let eraserlist = map getPtlID dtops
+--  let eraserlist = map getPtlID dtops
+  let newpinfos = cleanUpAll (ev,pmap,dtops)
+
+--      pmap' = connAllDaughterToGrandParents dtops pmap
+--      (plst,assoclst) = mkReplaceAssocList pmap'
+--      rmap = mkReplaceMap assoclst
+--  putStrLn $ show (mapMaybe (applyReplaceMap rmap) plst) 
+--  putStrLn $ show $ connAllDaughterToGrandParents dtops pmap 
+  Prelude.mapM (putStrLn . show) newpinfos 
   putStrLn "----------------------"
   st <- readIORef ref
   st `seq` writeIORef ref (st+1)
