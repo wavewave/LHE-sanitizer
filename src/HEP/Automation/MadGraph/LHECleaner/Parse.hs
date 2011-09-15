@@ -18,12 +18,15 @@ import Data.Maybe
 import HEP.Parser.LHEParser.Parser.Enumerator
 import HEP.Parser.LHEParser.Type 
 import HEP.Parser.LHEParser.DecayTop
+import HEP.Parser.LHEParser.Formatter
 
 import HEP.Automation.MadGraph.LHECleaner.Replace
 
 import Text.XML.Enumerator.Parse.Util
 import System.IO 
 import Prelude hiding (dropWhile,takeWhile,sequence)
+
+import qualified Data.Text.IO as TIO
 
 ------------------------------------
 -- Counting
@@ -58,8 +61,6 @@ countMarkerIter = do
   case t of 
     Nothing -> return ()
     Just _ -> countMarkerIter 
-
-
 
 --------------------------------------
 -- Printing
@@ -123,7 +124,9 @@ doBranch criterion taction faction = do
             if b 
               then liftIO $ taction c'
               else liftIO $ faction c'
-          Nothing -> return ()
+          Nothing -> do 
+            liftIO $ putStrLn "what?"
+            return ()
         doBranch criterion taction faction 
   
 ---------------------------------
@@ -149,8 +152,6 @@ action2 = enumZip countIter countMarkerIter
 
 action4 :: (MonadCount m, Show s) => Iteratee s m (Int, (), Integer, ())
 action4 = enumZip4 countIter countMarkerIter E.length printIter
-
-
 
 ------------------------------
 ------------------------------
@@ -191,69 +192,59 @@ getPtlID (Decay (pidinfo,_)) = ptlid . ptlinfo $ pidinfo
 getPtlID x = error $ "in getPtlID " ++ (show x)
 
 
-offShellAction :: (LHEvent,PtlInfoMap,[DecayTop PtlIDInfo]) -> IO () 
-offShellAction _ = return () -- putStrLn "offshell"
+offShellAction :: Handle -> (LHEvent,PtlInfoMap,[DecayTop PtlIDInfo]) -> IO () 
+offShellAction h (ev,pmap,dtops) = do
+  hPutStrLn h "<event>"
+  hPutStrLn h (formatLHEvent ev)
+  hPutStrLn h "</event>"
 
-onShellAction :: IORef Int -> (LHEvent,PtlInfoMap,[DecayTop PtlIDInfo]) -> IO ()
-onShellAction ref (ev,pmap,dtops) = do 
---  let eraserlist = map getPtlID dtops
-  let newpinfos = cleanUpAll (ev,pmap,dtops)
 
---      pmap' = connAllDaughterToGrandParents dtops pmap
---      (plst,assoclst) = mkReplaceAssocList pmap'
---      rmap = mkReplaceMap assoclst
---  putStrLn $ show (mapMaybe (applyReplaceMap rmap) plst) 
---  putStrLn $ show $ connAllDaughterToGrandParents dtops pmap 
-  Prelude.mapM (putStrLn . show) newpinfos 
-  putStrLn "----------------------"
-  st <- readIORef ref
-  st `seq` writeIORef ref (st+1)
+onShellAction :: Handle -> (LHEvent,PtlInfoMap,[DecayTop PtlIDInfo]) -> IO ()
+onShellAction h (ev,pmap,dtops) = do 
+  hPutStrLn h "<event>"
+  case ev of 
+    LHEvent einfo _ -> do
+      let newpinfos = cleanUpAll (ev,pmap,dtops)
+          n = Prelude.length newpinfos
+      (hPutStrLn h . formatLHEvent) (LHEvent einfo { nup = n }  newpinfos) 
+  hPutStrLn h "</event>"
 
--- putStrLn "onShell"
+
+
+parseLHEFile :: FilePath -> FilePath -> IO () 
+parseLHEFile ifn ofn = 
+  withFile ofn WriteMode $ \oh -> 
+    withFile ifn ReadMode $ \ih -> do 
+      let iter = do 
+            header <- textLHEHeader
+            liftIO $ mapM_ (TIO.hPutStr oh) $ header 
+            parseEventIter process -- (takeEnee 100 =$ process)
+          process = enumZip3 (processinside oh) countIter countMarkerIter
+          someAction oh = doBranch (checkAndFilterOnShell 9000006) (onShellAction oh) (offShellAction oh)
+          processinside oh = decayTopEnee =$ someAction oh
+
+      r <- flip runStateT (0::Int) (parseXmlFile ih iter)
+      hPutStrLn oh "</LesHouchesEvents>\n\n"
+
+      putStrLn $ show r 
+      return () 
  
--- extractOnShellParticle :: 
-
--------------------------------
--------------------------------
--------------------------------
-
---boolfunc (Just x) = isOnShell 9000006 x
---boolfunc Nothing = False
-
--- boolfunc = foldMap (isOnShell 9000006) 
 
 
-
--- boolAndOnShellDecay Nothing  = Nothing 
-
-
--- action6 = enumZip3 countIter countMarkerIter (printNIter 100)
-
--- action7 = enumZip3 countIter countMarkerIter (printSatisfying boolfunc)
-
--- (fmap (isOnShell 9000006)) ) 
+countEventInLHEFile :: FilePath -> IO ()
+countEventInLHEFile fn = 
+  withFile fn ReadMode $ \ih -> do 
+    let iter = do
+          header <- textLHEHeader 
+          liftIO $ mapM_ TIO.putStrLn header 
+          parseEventIter process 
+        process = enumZip countIter countMarkerIter
 
 
 
-parseLHEFile :: FilePath -> IO () 
-parseLHEFile fn = do 
-  ref <- newIORef 0
-  let iter = parseEventIter (takeEnee 100 =$ process)
-      process = enumZip3 processinside countIter countMarkerIter
-      someAction = doBranch (checkAndFilterOnShell 9000006) (onShellAction ref) offShellAction
-      processinside = decayTopEnee =$ someAction
-  r <- withFile fn ReadMode $ \h -> 
-         flip runStateT (0::Int) (parseXmlFile h iter)
-  putStrLn $ show r
-  result <- readIORef ref 
-  putStrLn $ show result
-  return ()
-
- --     someAction = doNIter 10 (putStrLn . simpleFormatter . fmap (map getPtlID))
---      someAction = doNIter 10 (putStrLn . simpleFormatter . fmap (Prelude.length))
-
--- printNIter 10 simpleFormatter 
+    r <- flip runStateT (0 :: Int) (parseXmlFile ih iter)
+    putStrLn $ show r 
 
 
---      process = countIter
-  
+
+
