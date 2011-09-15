@@ -1,6 +1,6 @@
-module HEP.Automation.MadGraph.LHECleaner.Job where
+module HEP.Automation.MadGraph.LHESanitizer.Job where
 
-import HEP.Automation.MadGraph.LHECleaner.Parse 
+import HEP.Automation.MadGraph.LHESanitizer.Parse 
 
 startConvert :: FilePath -> FilePath -> IO () 
 startConvert ifn ofn = do 

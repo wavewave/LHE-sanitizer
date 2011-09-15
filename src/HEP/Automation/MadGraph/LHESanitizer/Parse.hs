@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances, FlexibleContexts, TypeSynonymInstances,
              ScopedTypeVariables, OverloadedStrings, NoMonomorphismRestriction #-}
 
-module HEP.Automation.MadGraph.LHECleaner.Parse where
+module HEP.Automation.MadGraph.LHESanitizer.Parse where
 
 import Control.Monad as M
 import Control.Monad.IO.Class
@@ -20,7 +20,7 @@ import HEP.Parser.LHEParser.Type
 import HEP.Parser.LHEParser.DecayTop
 import HEP.Parser.LHEParser.Formatter
 
-import HEP.Automation.MadGraph.LHECleaner.Replace
+import HEP.Automation.MadGraph.LHESanitizer.Replace
 
 import Text.XML.Enumerator.Parse.Util
 import System.IO 

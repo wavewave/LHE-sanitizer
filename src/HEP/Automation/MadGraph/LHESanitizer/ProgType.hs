@@ -1,20 +1,20 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
-module HEP.Automation.MadGraph.LHECleaner.Type where 
+module HEP.Automation.MadGraph.LHESanitizer.ProgType where 
 
 import System.Console.CmdArgs
 import System.FilePath
 
-data LHECleaner = Convert { lhefilename :: FilePath
+data LHESanitizer = Convert { lhefilename :: FilePath
                           , outfilename :: FilePath }
                 | Count { lhefilename :: FilePath }
               deriving (Show,Data,Typeable)
 
-convert :: LHECleaner
+convert :: LHESanitizer
 convert = Convert { lhefilename = "" &= typ "LHEFILE" &= argPos 0
                   , outfilename = "" &= typ "OUTFILE" &= argPos 1 }
 
-count :: LHECleaner 
+count :: LHESanitizer
 count = Count { lhefilename = "" &= typ "LHEFILE" &= argPos 0 } 
 
 mode = modes [ convert, count ]
