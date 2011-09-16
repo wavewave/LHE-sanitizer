@@ -1,5 +1,5 @@
 Name:		LHE-sanitizer
-Version:	0.0.999
+Version:	0.1
 Synopsis:	sanitizing LHE file for feeding PYTHIA
 Description: 	PYTHIA often crashes when an input from MadEvent has some
                 irregularities in its LHE output file. This simple program 

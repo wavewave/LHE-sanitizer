@@ -6,7 +6,7 @@ startConvert :: FilePath -> FilePath -> IO ()
 startConvert ifn ofn = do 
   putStrLn "job started"
   putStrLn $ "processing " ++ ifn ++ " and recording " ++ ofn 
-  parseLHEFile ifn ofn 
+  sanitizeLHEFile ifn ofn 
 
 startCount :: FilePath -> IO () 
 startCount fn = do 

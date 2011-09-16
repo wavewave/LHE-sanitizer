@@ -211,8 +211,8 @@ onShellAction h (ev,pmap,dtops) = do
 
 
 
-parseLHEFile :: FilePath -> FilePath -> IO () 
-parseLHEFile ifn ofn = 
+sanitizeLHEFile :: FilePath -> FilePath -> IO () 
+sanitizeLHEFile ifn ofn = 
   withFile ofn WriteMode $ \oh -> 
     withFile ifn ReadMode $ \ih -> do 
       let iter = do 
