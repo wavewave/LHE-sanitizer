@@ -2,11 +2,11 @@ module HEP.Automation.MadGraph.LHESanitizer.Job where
 
 import HEP.Automation.MadGraph.LHESanitizer.Parse 
 
-startConvert :: FilePath -> FilePath -> IO () 
-startConvert ifn ofn = do 
+startConvert :: Int -> FilePath -> FilePath -> IO () 
+startConvert pid ifn ofn = do 
   putStrLn "job started"
   putStrLn $ "processing " ++ ifn ++ " and recording " ++ ofn 
-  sanitizeLHEFile ifn ofn 
+  sanitizeLHEFile pid ifn ofn 
 
 startCount :: FilePath -> IO () 
 startCount fn = do 

@@ -3,19 +3,21 @@
 module HEP.Automation.MadGraph.LHESanitizer.ProgType where 
 
 import System.Console.CmdArgs
-import System.FilePath
 
-data LHESanitizer = Convert { lhefilename :: FilePath
-                          , outfilename :: FilePath }
+data LHESanitizer = Convert { ptlid :: Int
+                            , lhefilename :: FilePath
+                            , outfilename :: FilePath }
                 | Count { lhefilename :: FilePath }
               deriving (Show,Data,Typeable)
 
 convert :: LHESanitizer
-convert = Convert { lhefilename = "" &= typ "LHEFILE" &= argPos 0
-                  , outfilename = "" &= typ "OUTFILE" &= argPos 1 }
+convert = Convert { ptlid = 9000006 &= typ "PTLID" &= argPos 0
+                  , lhefilename = "" &= typ "LHEFILE" &= argPos 1
+                  , outfilename = "" &= typ "OUTFILE" &= argPos 2 }
 
 count :: LHESanitizer
 count = Count { lhefilename = "" &= typ "LHEFILE" &= argPos 0 } 
 
+mode :: LHESanitizer
 mode = modes [ convert, count ]
 

@@ -211,26 +211,22 @@ onShellAction h (ev,pmap,dtops) = do
 
 
 
-sanitizeLHEFile :: FilePath -> FilePath -> IO () 
-sanitizeLHEFile ifn ofn = 
+sanitizeLHEFile :: Int -> FilePath -> FilePath -> IO () 
+sanitizeLHEFile pid ifn ofn = 
   withFile ofn WriteMode $ \oh -> 
     withFile ifn ReadMode $ \ih -> do 
       let iter = do 
             header <- textLHEHeader
             liftIO $ mapM_ (TIO.hPutStr oh) $ header 
-            parseEventIter process -- (takeEnee 100 =$ process)
-          process = enumZip3 (processinside oh) countIter countMarkerIter
-          someAction oh = doBranch (checkAndFilterOnShell 9000006) (onShellAction oh) (offShellAction oh)
+            parseEventIter process
+          process = processinside oh
+          someAction oh = doBranch (checkAndFilterOnShell pid) (onShellAction oh) (offShellAction oh)
           processinside oh = decayTopEnee =$ someAction oh
-
       r <- flip runStateT (0::Int) (parseXmlFile ih iter)
       hPutStrLn oh "</LesHouchesEvents>\n\n"
-
-      putStrLn $ show r 
+      -- putStrLn $ show r 
       return () 
  
-
-
 countEventInLHEFile :: FilePath -> IO ()
 countEventInLHEFile fn = 
   withFile fn ReadMode $ \ih -> do 
@@ -239,9 +235,6 @@ countEventInLHEFile fn =
           liftIO $ mapM_ TIO.putStrLn header 
           parseEventIter process 
         process = enumZip countIter countMarkerIter
-
-
-
     r <- flip runStateT (0 :: Int) (parseXmlFile ih iter)
     putStrLn $ show r 
 
