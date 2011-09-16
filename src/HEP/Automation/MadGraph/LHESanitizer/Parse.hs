@@ -169,21 +169,21 @@ getDecayTop ev@(LHEvent _einfo pinfos) =
 decayTopEnee :: (Monad m) => Enumeratee (Maybe LHEvent) (Maybe (LHEvent,PtlInfoMap,[DecayTop PtlIDInfo])) m a
 decayTopEnee = EL.map (fmap getDecayTop)  
 
-checkAndFilterOnShell :: PDGID 
+checkAndFilterOnShell :: [PDGID] 
                       -> (LHEvent,PtlInfoMap,[DecayTop PtlIDInfo]) 
                       -> (Bool,(LHEvent,PtlInfoMap,[DecayTop PtlIDInfo]))
-checkAndFilterOnShell pid (ev,pmap,dtops) = 
-  let dtops' = filterOnShellFromDecayTop pid dtops 
+checkAndFilterOnShell pids (ev,pmap,dtops) = 
+  let dtops' = filterOnShellFromDecayTop pids dtops 
   in  ((not.null) dtops',(ev,pmap,dtops'))
 
 
-filterOnShellFromDecayTop :: PDGID 
+filterOnShellFromDecayTop :: [PDGID] 
                          -> [DecayTop PtlIDInfo] 
                          -> [DecayTop PtlIDInfo]  
-filterOnShellFromDecayTop pid lst =
+filterOnShellFromDecayTop pids lst =
   let worker x acc = 
         case x of 
-          Decay (PIDInfo pid' _, _) -> if (pid==pid') then x:acc else acc
+          Decay (PIDInfo pid' _, _) -> if (pid' `elem` pids) then x:acc else acc
           _ -> acc
   in  foldr worker [] lst 
 
@@ -211,8 +211,8 @@ onShellAction h (ev,pmap,dtops) = do
 
 
 
-sanitizeLHEFile :: Int -> FilePath -> FilePath -> IO () 
-sanitizeLHEFile pid ifn ofn = 
+sanitizeLHEFile :: [Int] -> FilePath -> FilePath -> IO () 
+sanitizeLHEFile pids ifn ofn = 
   withFile ofn WriteMode $ \oh -> 
     withFile ifn ReadMode $ \ih -> do 
       let iter = do 
@@ -220,7 +220,7 @@ sanitizeLHEFile pid ifn ofn =
             liftIO $ mapM_ (TIO.hPutStr oh) $ header 
             parseEventIter process
           process = processinside oh
-          someAction oh = doBranch (checkAndFilterOnShell pid) (onShellAction oh) (offShellAction oh)
+          someAction oh = doBranch (checkAndFilterOnShell pids) (onShellAction oh) (offShellAction oh)
           processinside oh = decayTopEnee =$ someAction oh
       r <- flip runStateT (0::Int) (parseXmlFile ih iter)
       hPutStrLn oh "</LesHouchesEvents>\n\n"
