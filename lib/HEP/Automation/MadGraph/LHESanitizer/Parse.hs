@@ -8,12 +8,7 @@ import Control.Monad.IO.Class
 import Control.Monad.State hiding (sequence)
 
 import Data.Enumerator as E hiding (head,dropWhile,map)
-import qualified Data.Enumerator.List as EL
 import Data.Enumerator.Util 
-import qualified Data.Map as M
-
-
-import Data.Maybe
 
 import HEP.Parser.LHEParser.Parser.Enumerator
 import HEP.Parser.LHEParser.Type 
@@ -32,18 +27,6 @@ import qualified Data.Text.IO as TIO
 import Data.Enumerator.Util.Count
 import Data.Enumerator.Util.Control
 
-
-
-
-getDecayTop :: LHEvent -> (LHEvent,PtlInfoMap,[DecayTop PtlIDInfo])
-getDecayTop ev@(LHEvent _einfo pinfos) = 
-  let pmap = M.fromList (Prelude.map (\x->(idee x,x)) pinfos)
-      dtops = mkFullDecayTop (mkIntTree pinfos)
-      ptlidinfotop = fmap (mkDecayPDGExtTop pmap) dtops 
-  in  (ev,pmap,ptlidinfotop)
-  
-decayTopEnee :: (Monad m) => Enumeratee (Maybe LHEvent) (Maybe (LHEvent,PtlInfoMap,[DecayTop PtlIDInfo])) m a
-decayTopEnee = EL.map (fmap getDecayTop)  
 
 checkAndFilterOnShell :: [PDGID] 
                       -> (LHEvent,PtlInfoMap,[DecayTop PtlIDInfo]) 
