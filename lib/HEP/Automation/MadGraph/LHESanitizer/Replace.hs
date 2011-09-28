@@ -1,7 +1,6 @@
 module HEP.Automation.MadGraph.LHESanitizer.Replace where
 
 import HEP.Parser.LHEParser.Type 
-import HEP.Parser.LHEParser.DecayTop
 
 import Data.Tuple
 import Data.Maybe

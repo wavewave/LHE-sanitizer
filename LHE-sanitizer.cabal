@@ -15,21 +15,20 @@ data-files:
 
 Executable LHE-sanitizer
   Main-is: LHE-sanitizer.hs
-  hs-source-dirs: src
+  hs-source-dirs: exe
   ghc-options: 	-Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind -rtsopts
   ghc-prof-options: -caf-all -auto-all -rtsopts
-  Build-Depends: 
-                   base>4, mtl>2, directory, filepath, transformers >0.2.2,
-                   cmdargs, enumerator, enumerator-util, LHEParser, containers, text
+  Build-Depends: base>4, cmdargs>=0.7, LHE-sanitizer
 
 Library
-  hs-source-dirs: src
+  hs-source-dirs: lib
   ghc-options: 	-Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
   ghc-prof-options: -caf-all -auto-all
   Build-Depends: 
                    base>4, mtl>2, transformers>0.2.2,directory, filepath,
                    cmdargs, LHEParser>=0.2.0.999, attoparsec, bytestring, 
-                   enumerator, enumerator-util, containers, text
+                   enumerator, enumerator-util>=0.1.1, containers, text, 
+                   HEPUtil>=0.1.2
   Exposed-Modules: 
                    HEP.Automation.MadGraph.LHESanitizer.ProgType
                    HEP.Automation.MadGraph.LHESanitizer.Job
