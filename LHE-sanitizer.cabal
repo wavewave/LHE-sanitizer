@@ -1,5 +1,5 @@
 Name:		LHE-sanitizer
-Version:	0.1.1
+Version:	0.1.999
 Synopsis:	sanitizing LHE file for feeding PYTHIA
 Description: 	PYTHIA often crashes when an input from MadEvent has some
                 irregularities in its LHE output file. This simple program 
@@ -26,8 +26,14 @@ Library
   ghc-prof-options: -caf-all -auto-all
   Build-Depends: 
                    base>4, mtl>2, transformers>0.2.2,directory, filepath,
-                   cmdargs, LHEParser>=0.2.3, attoparsec, bytestring, 
-                   enumerator, enumerator-util>=0.1.1, containers, text, 
+                   cmdargs, 
+                   LHEParser>=0.2.999 && < 0.4, 
+                   conduit == 0.4.*, 
+                   conduit-util >= 0.1.999 && < 0.3,
+                   xml-conduit == 0.7.*,
+                   attoparsec, 
+                   bytestring, 
+                   containers, text, 
                    HEPUtil>=0.1.2
   Exposed-Modules: 
                    HEP.Automation.MadGraph.LHESanitizer.ProgType
@@ -37,5 +43,7 @@ Library
                    HEP.Automation.MadGraph.LHESanitizer.Replace
   Other-Modules: 
 
+                   -- enumerator, 
+                   -- enumerator-util>=0.1.1, 
  
 		 

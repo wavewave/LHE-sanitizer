@@ -7,25 +7,28 @@ import Control.Monad as M
 import Control.Monad.IO.Class
 import Control.Monad.State hiding (sequence)
 
-import Data.Enumerator as E hiding (head,dropWhile,map)
-import Data.Enumerator.Util 
+import Data.Conduit as C 
+import qualified Data.Conduit.List as CL
+import Data.Conduit.Util.Control
+import Data.Conduit.Util.Count
+-- import Data.Enumerator.Util 
 
-import HEP.Parser.LHEParser.Parser.Enumerator
+import HEP.Parser.LHEParser.Parser.Conduit
 import HEP.Parser.LHEParser.Type 
 import HEP.Parser.LHEParser.DecayTop
 import HEP.Parser.LHEParser.Formatter
 
 import HEP.Automation.MadGraph.LHESanitizer.Replace
 
-import Text.XML.Enumerator.Parse.Util
+import Text.XML.Conduit.Parse.Util
 import System.IO 
 import Prelude hiding (dropWhile,takeWhile,sequence)
 
 import qualified Data.Text.IO as TIO
 
 
-import Data.Enumerator.Util.Count
-import Data.Enumerator.Util.Control
+-- import Data.Enumerator.Util.Count
+-- import Data.Enumerator.Util.Control
 
 
 checkAndFilterOnShell :: [PDGID] 
@@ -73,10 +76,10 @@ sanitizeLHEFile pids ifn ofn =
       let iter = do 
             header <- textLHEHeader
             liftIO $ mapM_ (TIO.hPutStr oh) $ header 
-            parseEventIter process
+            parseEvent process
           process = processinside oh
           someAction h = doBranch (checkAndFilterOnShell pids) (onShellAction h) (offShellAction h)
-          processinside h = decayTopEnee =$ someAction h
+          processinside h = decayTopConduit =$ someAction h
       flip runStateT (0::Int) (parseXmlFile ih iter)
       hPutStrLn oh "</LesHouchesEvents>\n\n"
       return () 
@@ -87,8 +90,8 @@ countEventInLHEFile fn =
     let iter = do
           header <- textLHEHeader 
           liftIO $ mapM_ TIO.putStrLn header 
-          parseEventIter process 
-        process = enumZip countIter countMarkerIter
+          parseEvent process 
+        process = CL.zipSinks countIter countMarkerIter
     r <- flip runStateT (0 :: Int) (parseXmlFile ih iter)
     putStrLn $ show r 
 
