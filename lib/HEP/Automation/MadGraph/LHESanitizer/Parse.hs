@@ -76,7 +76,7 @@ sanitizeLHEFile pids ifn ofn =
       let iter = do 
             header <- textLHEHeader
             liftIO $ mapM_ (TIO.hPutStr oh) $ header 
-            parseEvent process
+            parseEvent =$ process
           process = processinside oh
           someAction h = doBranch (checkAndFilterOnShell pids) (onShellAction h) (offShellAction h)
           processinside h = decayTopConduit =$ someAction h
@@ -90,7 +90,7 @@ countEventInLHEFile fn =
     let iter = do
           header <- textLHEHeader 
           liftIO $ mapM_ TIO.putStrLn header 
-          parseEvent process 
+          parseEvent =$ process 
         process = CL.zipSinks countIter countMarkerIter
     r <- flip runStateT (0 :: Int) (parseXmlFile ih iter)
     putStrLn $ show r 
