@@ -9,6 +9,7 @@ import Control.Monad.State hiding (sequence)
 
 import Data.Conduit as C 
 import qualified Data.Conduit.List as CL
+import qualified Data.Conduit.Util as CU
 import Data.Conduit.Util.Control
 import Data.Conduit.Util.Count
 -- import Data.Enumerator.Util 
@@ -91,7 +92,7 @@ countEventInLHEFile fn =
           header <- textLHEHeader 
           liftIO $ mapM_ TIO.putStrLn header 
           parseEvent =$ process 
-        process = CL.zipSinks countIter countMarkerIter
+        process = CU.zipSinks countIter countMarkerIter
     r <- flip runStateT (0 :: Int) (parseXmlFile ih iter)
     putStrLn $ show r 
 
