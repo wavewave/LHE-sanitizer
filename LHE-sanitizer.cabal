@@ -25,7 +25,11 @@ Library
   ghc-options: 	-Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
   ghc-prof-options: -caf-all -auto-all
   Build-Depends: 
-                   base>4, mtl>2, transformers>0.2.2,directory, filepath,
+                   base>4, 
+		   mtl>2, 
+		   transformers>0.2.2,
+		   directory, 
+		   filepath,
                    cmdargs, 
                    LHEParser>=0.2.999 && < 0.4, 
                    conduit == 0.5.*, 
@@ -43,7 +47,5 @@ Library
                    HEP.Automation.MadGraph.LHESanitizer.Replace
   Other-Modules: 
 
-                   -- enumerator, 
-                   -- enumerator-util>=0.1.1, 
  
 		 
