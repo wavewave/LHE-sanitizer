@@ -3,7 +3,7 @@
 sudo apt-get install libblas-dev
 sudo apt-get install liblapack-dev
 sudo apt-get install libgsl0-dev
-
+cabal install transformers
 cabal install hmatrix 
 
 ghc-pkg list
