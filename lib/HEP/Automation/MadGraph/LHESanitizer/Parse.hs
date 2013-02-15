@@ -12,6 +12,7 @@ import qualified Data.Conduit.List as CL
 import qualified Data.Conduit.Util as CU
 import Data.Conduit.Util.Control
 import Data.Conduit.Util.Count
+import qualified Data.List as L 
 -- import Data.Enumerator.Util 
 
 import HEP.Parser.LHEParser.Parser.Conduit
@@ -38,6 +39,18 @@ checkAndFilterOnShell :: [PDGID]
 checkAndFilterOnShell pids (ev,pmap,dtops) = 
   let dtops' = filterOnShellFromDecayTop pids dtops 
   in  ((not.null) dtops',(ev,pmap,dtops'))
+
+
+replacePDGID :: [(PDGID,PDGID)] -> LHEvent -> LHEvent
+replacePDGID pidlst ev@(LHEvent einfo pinfos) = 
+    let pinfos' = map rf pinfos 
+    in LHEvent einfo pinfos'
+  where rf x = case lookup (idup x) pidlst of 
+                 Nothing -> x
+                 Just nid -> x { idup = nid } 
+
+  
+
 
 
 filterOnShellFromDecayTop :: [PDGID] 
@@ -70,6 +83,21 @@ onShellAction h (ev,pmap,dtops) = do
       (hPutStrLn h . formatLHEvent) (LHEvent einfo { nup = n }  newpinfos) 
   hPutStrLn h "</event>"
 
+replaceAction :: Handle -> [(Int,Int)] 
+                 -> (LHEvent,PtlInfoMap,[DecayTop PtlIDInfo]) -> IO ()
+replaceAction h pids (ev,_pmap,_dtops) = do 
+  hPutStrLn h "<event>"
+  let ev' = replacePDGID pids ev 
+{-  case ev of 
+    LHEvent einfo _ -> do
+      let newpinfos = cleanUpAll (ev,pmap,dtops)
+          n = Prelude.length newpinfos
+      (hPutStrLn h . formatLHEvent) (LHEvent einfo { nup = n }  newpinfos) -}
+  hPutStrLn h (formatLHEvent ev')
+  hPutStrLn h "</event>"
+
+
+
 sanitizeLHEFile :: [Int] -> FilePath -> FilePath -> IO () 
 sanitizeLHEFile pids ifn ofn = 
   withFile ofn WriteMode $ \oh -> 
@@ -83,7 +111,43 @@ sanitizeLHEFile pids ifn ofn =
           processinside h = decayTopConduit =$ someAction h
       flip runStateT (0::Int) (parseXmlFile ih iter)
       hPutStrLn oh "</LesHouchesEvents>\n\n"
+      return ()
+ 
+-- | replace 
+sanitizeLHEFile_replace :: [(Int,Int)] -> FilePath -> FilePath -> IO () 
+sanitizeLHEFile_replace pids ifn ofn = do 
+  -- let rpids = map fst pids 
+  withFile ofn WriteMode $ \oh -> 
+    withFile ifn ReadMode $ \ih -> do 
+      let iter = do 
+            header <- textLHEHeader
+            liftIO $ mapM_ (TIO.hPutStr oh) $ header 
+            parseEvent =$ process
+          process = processinside oh
+          someAction h = doBranch (\x->(True,x))
+                           (replaceAction h pids)
+                           undefined -- (offShellAction h)
+
+
+{-          someAction h n = do 
+            elm <- CL.head
+            case elm of 
+              Nothing -> return ()
+              Just maybec -> do 
+                case maybec of 
+                  Just c -> do 
+                    -- liftIO $ replaceAction h pids c
+                    liftIO $ print n 
+                  Nothing -> return ()
+            someAction h (n+1)
+-}
+
+          processinside h = decayTopConduit =$ someAction h 
+      flip runStateT (0::Int) (parseXmlFile ih iter)
+      hPutStrLn oh "</LesHouchesEvents>\n\n"
       return () 
+
+
  
 countEventInLHEFile :: FilePath -> IO ()
 countEventInLHEFile fn = 

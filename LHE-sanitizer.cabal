@@ -25,20 +25,20 @@ Library
   ghc-options: 	-Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
   ghc-prof-options: -caf-all -auto-all
   Build-Depends: 
-                   base>4, 
-		   mtl>2, 
-		   transformers>0.2.2,
-		   directory, 
-		   filepath,
-                   cmdargs, 
-                   LHEParser>=0.2.999 && < 0.4, 
-                   conduit == 0.5.*, 
-                   conduit-util >= 0.2.0.999 && < 0.3,
-                   xml-conduit == 1.0.*,
-                   attoparsec, 
-                   bytestring, 
-                   containers, text, 
-                   HEPUtil>=0.1.2
+                 base>4, 
+                 mtl>2, 
+                 transformers>0.2.2,
+                 directory, 
+                 filepath,
+                 cmdargs, 
+                 LHEParser>=0.2.999 && < 0.4, 
+                 conduit == 0.5.*, 
+                 conduit-util >= 0.2.0.999 && < 0.3,
+                 xml-conduit == 1.0.*,
+                 attoparsec, 
+                 bytestring, 
+                 containers, text, 
+                 HEPUtil>=0.1.2
   Exposed-Modules: 
                    HEP.Automation.MadGraph.LHESanitizer.ProgType
                    HEP.Automation.MadGraph.LHESanitizer.Job
