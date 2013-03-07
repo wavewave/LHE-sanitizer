@@ -13,15 +13,15 @@ Cabal-Version:  >= 1.8
 data-files:     
 
 
-Executable LHE-sanitizer
-  Main-is: LHE-sanitizer.hs
-  hs-source-dirs: exe
-  ghc-options: 	-Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind -rtsopts
-  ghc-prof-options: -caf-all -auto-all -rtsopts
-  Build-Depends: base>4, cmdargs>=0.7, LHE-sanitizer
+-- Executable LHE-sanitizer
+--  Main-is: LHE-sanitizer.hs
+--  hs-source-dirs: exe
+--  ghc-options: 	-Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind -rtsopts
+--  ghc-prof-options: -caf-all -auto-all -rtsopts
+--  Build-Depends: base>4, cmdargs>=0.7, LHE-sanitizer
 
 Library
-  hs-source-dirs: lib
+  hs-source-dirs: src
   ghc-options: 	-Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
   ghc-prof-options: -caf-all -auto-all
   Build-Depends: 
@@ -30,21 +30,18 @@ Library
                  transformers>0.2.2,
                  directory, 
                  filepath,
-                 cmdargs, 
-                 LHEParser>=0.2.999 && < 0.4, 
+                 -- cmdargs, 
+                 LHEParser>=0.999, 
                  conduit == 0.5.*, 
-                 conduit-util >= 0.2.0.999 && < 0.3,
+                 conduit-util >= 0.2.999,
                  xml-conduit == 1.0.*,
                  attoparsec, 
                  bytestring, 
                  containers, text, 
                  HEPUtil>=0.1.2
   Exposed-Modules: 
-                   HEP.Automation.MadGraph.LHESanitizer.ProgType
-                   HEP.Automation.MadGraph.LHESanitizer.Job
-                   HEP.Automation.MadGraph.LHESanitizer.Command
-                   HEP.Automation.MadGraph.LHESanitizer.Parse
-                   HEP.Automation.MadGraph.LHESanitizer.Replace
+                   HEP.Parser.LHE.Sanitizer
+                   HEP.Parser.LHE.Sanitizer.Replace
   Other-Modules: 
 
  

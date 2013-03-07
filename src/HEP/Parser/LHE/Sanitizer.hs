@@ -1,36 +1,47 @@
 {-# LANGUAGE FlexibleInstances, FlexibleContexts, TypeSynonymInstances,
              ScopedTypeVariables, OverloadedStrings, NoMonomorphismRestriction #-}
 
-module HEP.Automation.MadGraph.LHESanitizer.Parse where
 
-import Control.Monad as M
-import Control.Monad.IO.Class
-import Control.Monad.State hiding (sequence)
+-----------------------------------------------------------------------------
+-- |
+-- Module      : HEP.Parser.LHE.Sanitizer
+-- Copyright   : (c) 2011-2013 Ian-Woo Kim
+--
+-- License     : BSD3
+-- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
+-- Stability   : experimental
+-- Portability : GHC
+--
+-- Main routine for parsing and processing (sanitizing) LHE file. 
+--
+-----------------------------------------------------------------------------
 
-import Data.Conduit as C 
-import qualified Data.Conduit.List as CL
+
+module HEP.Parser.LHE.Sanitizer where
+
+import           Control.Monad as M
+import           Control.Monad.IO.Class
+import           Control.Monad.State hiding (sequence)
+import           Data.Conduit as C 
+-- import qualified Data.Conduit.List as CL
 import qualified Data.Conduit.Util as CU
-import Data.Conduit.Util.Control
-import Data.Conduit.Util.Count
-import qualified Data.List as L 
--- import Data.Enumerator.Util 
-
-import HEP.Parser.LHEParser.Parser.Conduit
-import HEP.Parser.LHEParser.Type 
-import HEP.Parser.LHEParser.DecayTop
-import HEP.Parser.LHEParser.Formatter
-
-import HEP.Automation.MadGraph.LHESanitizer.Replace
-
-import Text.XML.Conduit.Parse.Util
-import System.IO 
+import           Data.Conduit.Util.Control
+import           Data.Conduit.Util.Count
+-- import qualified Data.List as L 
+-- import           Data.Maybe (fromJust)
+import qualified Data.Text.IO as TIO
+import           System.IO 
+import           Text.XML.Conduit.Parse.Util
+-- from hep-platform 
+import           HEP.Parser.LHE.Conduit
+import           HEP.Parser.LHE.Type 
+import           HEP.Parser.LHE.DecayTop
+import           HEP.Parser.LHE.Formatter
+-- from this package
+import           HEP.Parser.LHE.Sanitizer.Replace
+-- 
 import Prelude hiding (dropWhile,takeWhile,sequence)
 
-import qualified Data.Text.IO as TIO
-
-
--- import Data.Enumerator.Util.Count
--- import Data.Enumerator.Util.Control
 
 
 checkAndFilterOnShell :: [PDGID] 
@@ -88,11 +99,6 @@ replaceAction :: Handle -> [(Int,Int)]
 replaceAction h pids (ev,_pmap,_dtops) = do 
   hPutStrLn h "<event>"
   let ev' = replacePDGID pids ev 
-{-  case ev of 
-    LHEvent einfo _ -> do
-      let newpinfos = cleanUpAll (ev,pmap,dtops)
-          n = Prelude.length newpinfos
-      (hPutStrLn h . formatLHEvent) (LHEvent einfo { nup = n }  newpinfos) -}
   hPutStrLn h (formatLHEvent ev')
   hPutStrLn h "</event>"
 
@@ -116,7 +122,6 @@ sanitizeLHEFile pids ifn ofn =
 -- | replace 
 sanitizeLHEFile_replace :: [(Int,Int)] -> FilePath -> FilePath -> IO () 
 sanitizeLHEFile_replace pids ifn ofn = do 
-  -- let rpids = map fst pids 
   withFile ofn WriteMode $ \oh -> 
     withFile ifn ReadMode $ \ih -> do 
       let iter = do 
@@ -127,25 +132,11 @@ sanitizeLHEFile_replace pids ifn ofn = do
           someAction h = doBranch (\x->(True,x))
                            (replaceAction h pids)
                            undefined -- (offShellAction h)
-
-
-{-          someAction h n = do 
-            elm <- CL.head
-            case elm of 
-              Nothing -> return ()
-              Just maybec -> do 
-                case maybec of 
-                  Just c -> do 
-                    -- liftIO $ replaceAction h pids c
-                    liftIO $ print n 
-                  Nothing -> return ()
-            someAction h (n+1)
--}
-
-          processinside h = decayTopConduit =$ someAction h 
+          processinside h = decayTopConduit =$ someAction h  
       flip runStateT (0::Int) (parseXmlFile ih iter)
       hPutStrLn oh "</LesHouchesEvents>\n\n"
       return () 
+
 
 
  

@@ -1,6 +1,20 @@
-module HEP.Automation.MadGraph.LHESanitizer.Replace where
+-----------------------------------------------------------------------------
+-- |
+-- Module      : HEP.Parser.LHE.Sanitizer.Replace
+-- Copyright   : (c) 2011-2013 Ian-Woo Kim
+--
+-- License     : BSD3
+-- Maintainer  : Ian-Woo Kim <ianwookim@gmail.com>
+-- Stability   : experimental
+-- Portability : GHC
+--
+-- replace routine for sanitizing LHE file.
+--
+-----------------------------------------------------------------------------
 
-import HEP.Parser.LHEParser.Type 
+module HEP.Parser.LHE.Sanitizer.Replace where
+
+import HEP.Parser.LHE.Type 
 
 import Data.Tuple
 import Data.Maybe
