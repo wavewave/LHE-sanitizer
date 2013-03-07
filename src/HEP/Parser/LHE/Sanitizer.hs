@@ -45,11 +45,14 @@ import Prelude hiding (dropWhile,takeWhile,sequence)
 
 
 checkAndFilterOnShell :: [PDGID] 
-                      -> (LHEvent,PtlInfoMap,[DecayTop PtlIDInfo]) 
-                      -> (Bool,(LHEvent,PtlInfoMap,[DecayTop PtlIDInfo]))
-checkAndFilterOnShell pids (ev,pmap,dtops) = 
+                      -> LHEventTop 
+                      -> Either LHEventTop LHEventTop 
+                         -- ^ left is on-shell, right is off-shell
+checkAndFilterOnShell pids (LHEventTop ev pmap dtops) = 
   let dtops' = filterOnShellFromDecayTop pids dtops 
-  in  ((not.null) dtops',(ev,pmap,dtops'))
+  in if (not.null) dtops'
+       then Left (LHEventTop ev pmap dtops')
+       else Right (LHEventTop ev pmap dtops')
 
 
 replacePDGID :: [(PDGID,PDGID)] -> LHEvent -> LHEvent
@@ -78,14 +81,14 @@ getPtlID :: DecayTop PtlIDInfo -> PtlID
 getPtlID (Decay (pidinfo,_)) = ptlid . ptlinfo $ pidinfo 
 getPtlID x = error $ "in getPtlID " ++ (show x)
 
-offShellAction :: Handle -> (LHEvent,PtlInfoMap,[DecayTop PtlIDInfo]) -> IO () 
-offShellAction h (ev,_pmap,_dtops) = do
+offShellAction :: Handle -> LHEventTop -> IO () 
+offShellAction h (LHEventTop ev _pmap _dtops) = do
   hPutStrLn h "<event>"
   hPutStrLn h (formatLHEvent ev)
   hPutStrLn h "</event>"
 
-onShellAction :: Handle -> (LHEvent,PtlInfoMap,[DecayTop PtlIDInfo]) -> IO ()
-onShellAction h (ev,pmap,dtops) = do 
+onShellAction :: Handle -> LHEventTop -> IO ()
+onShellAction h (LHEventTop ev pmap dtops) = do 
   hPutStrLn h "<event>"
   case ev of 
     LHEvent einfo _ -> do
@@ -94,9 +97,8 @@ onShellAction h (ev,pmap,dtops) = do
       (hPutStrLn h . formatLHEvent) (LHEvent einfo { nup = n }  newpinfos) 
   hPutStrLn h "</event>"
 
-replaceAction :: Handle -> [(Int,Int)] 
-                 -> (LHEvent,PtlInfoMap,[DecayTop PtlIDInfo]) -> IO ()
-replaceAction h pids (ev,_pmap,_dtops) = do 
+replaceAction :: Handle -> [(Int,Int)] -> LHEventTop -> IO ()
+replaceAction h pids (LHEventTop ev _pmap _dtops) = do 
   hPutStrLn h "<event>"
   let ev' = replacePDGID pids ev 
   hPutStrLn h (formatLHEvent ev')
@@ -113,7 +115,7 @@ sanitizeLHEFile pids ifn ofn =
             liftIO $ mapM_ (TIO.hPutStr oh) $ header 
             parseEvent =$ process
           process = processinside oh
-          someAction h = doBranch (checkAndFilterOnShell pids) (onShellAction h) (offShellAction h)
+          someAction h = doBranchE (checkAndFilterOnShell pids) (onShellAction h) (offShellAction h)
           processinside h = decayTopConduit =$ someAction h
       flip runStateT (0::Int) (parseXmlFile ih iter)
       hPutStrLn oh "</LesHouchesEvents>\n\n"
@@ -129,9 +131,7 @@ sanitizeLHEFile_replace pids ifn ofn = do
             liftIO $ mapM_ (TIO.hPutStr oh) $ header 
             parseEvent =$ process
           process = processinside oh
-          someAction h = doBranch (\x->(True,x))
-                           (replaceAction h pids)
-                           undefined -- (offShellAction h)
+          someAction h = awaitForever $ liftIO . replaceAction h pids
           processinside h = decayTopConduit =$ someAction h  
       flip runStateT (0::Int) (parseXmlFile ih iter)
       hPutStrLn oh "</LesHouchesEvents>\n\n"
