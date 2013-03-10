@@ -1,5 +1,5 @@
 Name:		LHE-sanitizer
-Version:	0.1.999
+Version:	0.999
 Synopsis:	sanitizing LHE file for feeding PYTHIA
 Description: 	PYTHIA often crashes when an input from MadEvent has some
                 irregularities in its LHE output file. This simple program 
@@ -12,14 +12,6 @@ Build-Type: 	Simple
 Cabal-Version:  >= 1.8
 data-files:     
 
-
--- Executable LHE-sanitizer
---  Main-is: LHE-sanitizer.hs
---  hs-source-dirs: exe
---  ghc-options: 	-Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind -rtsopts
---  ghc-prof-options: -caf-all -auto-all -rtsopts
---  Build-Depends: base>4, cmdargs>=0.7, LHE-sanitizer
-
 Library
   hs-source-dirs: src
   ghc-options: 	-Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
@@ -30,11 +22,10 @@ Library
                  transformers>0.2.2,
                  directory, 
                  filepath,
-                 -- cmdargs, 
                  LHEParser>=0.999, 
-                 conduit == 0.5.*, 
+                 conduit > 1, 
                  conduit-util >= 0.2.999,
-                 xml-conduit == 1.0.*,
+                 xml-conduit > 1,
                  attoparsec, 
                  bytestring, 
                  containers, text, 
