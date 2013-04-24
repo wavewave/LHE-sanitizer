@@ -30,6 +30,8 @@ Library
                  bytestring, 
                  containers, text, 
                  HEPUtil>=0.1.2, 
+                 pureMD5 > 2,
+                 random >= 1,
                  random-shuffle
   Exposed-Modules: 
                    HEP.Parser.LHE.Sanitizer

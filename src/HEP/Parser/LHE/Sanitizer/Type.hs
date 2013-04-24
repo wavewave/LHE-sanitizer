@@ -18,6 +18,11 @@ module HEP.Parser.LHE.Sanitizer.Type where
 
 import Data.Data
 
-data SanitizeType = Elim [Int] | Replace [(Int,Int)]
+-- | sanitize actions (this is rather temporary) 
+data SanitizeType = Elim [Int] 
+                  | Replace [(Int,Int)] 
+                  | Shuffle 
+                  | ElimShuffle [Int]
+                  | ReplaceShuffle [(Int,Int)]
                   deriving (Show,Typeable,Data)
 

@@ -22,12 +22,17 @@ module HEP.Parser.LHE.Sanitizer where
 import           Control.Monad as M
 import           Control.Monad.IO.Class
 import           Control.Monad.State hiding (sequence)
+import qualified Data.ByteString.Lazy.Char8 as B
 import           Data.Conduit as C 
+import           Data.Digest.Pure.MD5
 -- import qualified Data.Conduit.List as CL
 -- import qualified Data.List as L 
 -- import           Data.Maybe (fromJust)
 import qualified Data.Text.IO as TIO
+import           System.FilePath
+import           System.Directory
 import           System.IO 
+import           System.Random
 import           Text.XML.Conduit.Parse.Util
 -- from hep-platform 
 -- import qualified Data.Conduit.Util as CU
@@ -46,12 +51,30 @@ import           HEP.Parser.LHE.Sanitizer.Type
 -- 
 import Prelude hiding (dropWhile,takeWhile,sequence)
 
+withRandomTempFile :: (FilePath -> IO ()) -> IO () 
+withRandomTempFile act = do 
+  tdir <- getTemporaryDirectory 
+  r <- randomIO :: IO Int 
+  let tmpfile = (tdir </>) .  show . md5 . B.pack . show $ r
+  act tmpfile 
+  removeFile tmpfile 
+
+
 -- | sanitizing LHE file according to spec
 sanitizeLHEFile :: SanitizeType -> FilePath -> FilePath -> IO () 
-sanitizeLHEFile (Elim pids) = sanitizeLHEFile_eliminate pids 
-sanitizeLHEFile (Replace pids) = sanitizeLHEFile_replace pids 
+sanitizeLHEFile (Elim pids) ifp ofp = sanitizeLHEFile_eliminate pids ifp ofp 
+sanitizeLHEFile (Replace rpidtable) ifp ofp = sanitizeLHEFile_replace rpidtable ifp ofp
+sanitizeLHEFile Shuffle ifp ofp = sanitizeLHEFile_shuffle ifp ofp 
+sanitizeLHEFile (ElimShuffle pids) ifp ofp = 
+  withRandomTempFile $ \tmpfile -> do 
+    sanitizeLHEFile_eliminate pids ifp tmpfile 
+    sanitizeLHEFile_shuffle tmpfile ofp 
+sanitizeLHEFile (ReplaceShuffle rpidtable) ifp ofp = 
+  withRandomTempFile $ \tmpfile -> do 
+    sanitizeLHEFile_replace rpidtable ifp tmpfile 
+    sanitizeLHEFile_shuffle tmpfile ofp   
 
-
+-- | 
 checkAndFilterOnShell :: [PDGID] 
                       -> LHEventTop 
                       -> Either LHEventTop LHEventTop 
