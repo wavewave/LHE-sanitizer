@@ -38,10 +38,17 @@ import           HEP.Parser.LHE.Type
 import           HEP.Parser.LHE.DecayTop
 import           HEP.Parser.LHE.Formatter
 -- from this package
+import           HEP.Parser.LHE.Sanitizer.Eliminate
 import           HEP.Parser.LHE.Sanitizer.Replace
+import           HEP.Parser.LHE.Sanitizer.Shuffle
+import           HEP.Parser.LHE.Sanitizer.Type
 -- 
 import Prelude hiding (dropWhile,takeWhile,sequence)
 
+-- | sanitizing LHE file according to spec
+sanitizeLHEFile :: SanitizeType -> FilePath -> FilePath -> IO () 
+sanitizeLHEFile (Elim pids) = sanitizeLHEFile_eliminate pids 
+sanitizeLHEFile (Replace pids) = sanitizeLHEFile_replace pids 
 
 
 checkAndFilterOnShell :: [PDGID] 
@@ -106,8 +113,8 @@ replaceAction h pids (LHEventTop ev _pmap _dtops) = do
 
 
 
-sanitizeLHEFile :: [Int] -> FilePath -> FilePath -> IO () 
-sanitizeLHEFile pids ifn ofn = 
+sanitizeLHEFile_eliminate :: [Int] -> FilePath -> FilePath -> IO () 
+sanitizeLHEFile_eliminate pids ifn ofn = 
   withFile ofn WriteMode $ \oh -> 
     withFile ifn ReadMode $ \ih -> do 
       let iter = do 

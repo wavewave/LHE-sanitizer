@@ -4,7 +4,7 @@ Synopsis:	sanitizing LHE file for feeding PYTHIA
 Description: 	PYTHIA often crashes when an input from MadEvent has some
                 irregularities in its LHE output file. This simple program 
                 cleans up those irregularities. 
-License: 	BSD3
+License: 	GPL-3
 License-file:	LICENSE
 Author:		Ian-Woo Kim
 Maintainer: 	Ian-Woo Kim <ianwookim@gmail.com>
@@ -29,10 +29,14 @@ Library
                  attoparsec, 
                  bytestring, 
                  containers, text, 
-                 HEPUtil>=0.1.2
+                 HEPUtil>=0.1.2, 
+                 random-shuffle
   Exposed-Modules: 
                    HEP.Parser.LHE.Sanitizer
+                   HEP.Parser.LHE.Sanitizer.Eliminate
                    HEP.Parser.LHE.Sanitizer.Replace
+                   HEP.Parser.LHE.Sanitizer.Shuffle
+                   HEP.Parser.LHE.Sanitizer.Type
   Other-Modules: 
 
  
