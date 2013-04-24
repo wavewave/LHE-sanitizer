@@ -24,21 +24,22 @@ import           Control.Monad.IO.Class
 import           Control.Monad.State hiding (sequence)
 import           Data.Conduit as C 
 -- import qualified Data.Conduit.List as CL
-import qualified Data.Conduit.Util as CU
-import           Data.Conduit.Util.Control
-import           Data.Conduit.Util.Count
 -- import qualified Data.List as L 
 -- import           Data.Maybe (fromJust)
 import qualified Data.Text.IO as TIO
 import           System.IO 
 import           Text.XML.Conduit.Parse.Util
 -- from hep-platform 
+-- import qualified Data.Conduit.Util as CU
+import           Data.Conduit.Util.Control
+-- import           Data.Conduit.Util.Count
 import           HEP.Parser.LHE.Conduit
 import           HEP.Parser.LHE.Type 
 import           HEP.Parser.LHE.DecayTop
 import           HEP.Parser.LHE.Formatter
 -- from this package
 import           HEP.Parser.LHE.Sanitizer.Eliminate
+import           HEP.Parser.LHE.Sanitizer.FileIO
 import           HEP.Parser.LHE.Sanitizer.Replace
 import           HEP.Parser.LHE.Sanitizer.Shuffle
 import           HEP.Parser.LHE.Sanitizer.Type
@@ -69,9 +70,6 @@ replacePDGID pidlst ev@(LHEvent einfo pinfos) =
   where rf x = case lookup (idup x) pidlst of 
                  Nothing -> x
                  Just nid -> x { idup = nid } 
-
-  
-
 
 
 filterOnShellFromDecayTop :: [PDGID] 
@@ -144,17 +142,7 @@ sanitizeLHEFile_replace pids ifn ofn = do
       hPutStrLn oh "</LesHouchesEvents>\n\n"
       return () 
 
-
+      
 
  
-countEventInLHEFile :: FilePath -> IO ()
-countEventInLHEFile fn = 
-  withFile fn ReadMode $ \ih -> do 
-    let iter = do
-          header <- textLHEHeader 
-          liftIO $ mapM_ TIO.putStrLn header 
-          parseEvent =$ process 
-        process = CU.zipSinks countIter countMarkerIter
-    r <- flip runStateT (0 :: Int) (parseXmlFile ih iter)
-    putStrLn $ show r 
 

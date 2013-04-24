@@ -34,6 +34,7 @@ Library
   Exposed-Modules: 
                    HEP.Parser.LHE.Sanitizer
                    HEP.Parser.LHE.Sanitizer.Eliminate
+                   HEP.Parser.LHE.Sanitizer.FileIO
                    HEP.Parser.LHE.Sanitizer.Replace
                    HEP.Parser.LHE.Sanitizer.Shuffle
                    HEP.Parser.LHE.Sanitizer.Type
