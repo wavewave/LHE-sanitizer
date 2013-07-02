@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      : HEP.Parser.LHE.Sanitizer.Replace
+-- Module      : HEP.Parser.LHE.Sanitizer.Reconnect
 -- Copyright   : (c) 2011-2013 Ian-Woo Kim
 --
 -- License     : BSD3
@@ -12,7 +12,7 @@
 --
 -----------------------------------------------------------------------------
 
-module HEP.Parser.LHE.Sanitizer.Replace where
+module HEP.Parser.LHE.Sanitizer.Reconnect where
 
 import HEP.Parser.LHE.Type 
 
