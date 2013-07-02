@@ -42,17 +42,17 @@ withRandomTempFile act = do
 
 -- | sanitizing LHE file according to spec
 sanitizeLHEFile :: SanitizeType -> FilePath -> FilePath -> IO () 
-sanitizeLHEFile (Elim pids) ifp ofp = sanitizeLHEFile_eliminate pids ifp ofp 
-sanitizeLHEFile (Replace rpidtable) ifp ofp = sanitizeLHEFile_replace rpidtable ifp ofp
-sanitizeLHEFile Shuffle ifp ofp = sanitizeLHEFile_shuffle ifp ofp 
+sanitizeLHEFile (Elim pids) ifp ofp = eliminate pids ifp ofp 
+sanitizeLHEFile (Replace rpidtable) ifp ofp = replace rpidtable ifp ofp
+sanitizeLHEFile Shuffle ifp ofp = shuffle ifp ofp 
 sanitizeLHEFile (ElimShuffle pids) ifp ofp = 
   withRandomTempFile $ \tmpfile -> do 
-    sanitizeLHEFile_eliminate pids ifp tmpfile 
-    sanitizeLHEFile_shuffle tmpfile ofp 
+    eliminate pids ifp tmpfile 
+    shuffle tmpfile ofp 
 sanitizeLHEFile (ReplaceShuffle rpidtable) ifp ofp = 
   withRandomTempFile $ \tmpfile -> do 
-    sanitizeLHEFile_replace rpidtable ifp tmpfile 
-    sanitizeLHEFile_shuffle tmpfile ofp   
+    replace rpidtable ifp tmpfile 
+    shuffle tmpfile ofp   
 
 
  

@@ -39,6 +39,7 @@ Library
                    HEP.Parser.LHE.Sanitizer.FileIO
                    HEP.Parser.LHE.Sanitizer.Reconnect
                    HEP.Parser.LHE.Sanitizer.Type
+                   HEP.Parser.LHE.Sanitizer.Util
   Other-Modules: 
 
  
