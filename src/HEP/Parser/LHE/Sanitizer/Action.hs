@@ -1,3 +1,5 @@
+{-# LANGUAGE NoMonomorphismRestriction #-}
+
 -----------------------------------------------------------------------------
 -- |
 -- Module      : HEP.Parser.LHE.Sanitizer.Shuffle
@@ -47,8 +49,10 @@ shuffle ifn ofn =
  
 
 eliminate :: [Int] -> FilePath -> FilePath -> IO () 
-eliminate pids ifn ofn = 
-  fileProcInOut ifn ofn $ \(InFile ih) (OutFile oh) -> do
+eliminate pids ifn ofn = (fileProcInOut ifn ofn . preserveHeaderAndProcessEvents) $ \h ->
+                           doBranchE (checkAndFilterOnShell pids) (onShellAction h) (offShellAction h)
+
+{-
     let iter = do 
           header <- textLHEHeader
           liftIO $ mapM_ (TIO.hPutStr oh) $ header 
@@ -58,13 +62,15 @@ eliminate pids ifn ofn =
         processinside h = decayTopConduit =$ someAction h
     flip runStateT (0::Int) (parseXmlFile ih iter)
     hPutStrLn oh "</LesHouchesEvents>\n\n"
- 
+-} 
 
 -- | replace 
 replace :: [(Int,Int)] -> FilePath -> FilePath -> IO () 
-replace pids ifn ofn = 
-  fileProcInOut ifn ofn $ \(InFile ih) (OutFile oh) -> do
-    let iter = do 
+replace pids ifn ofn = (fileProcInOut ifn ofn . preserveHeaderAndProcessEvents) $ \h -> 
+                         awaitForever $ liftIO . replaceAction h pids
+
+
+{-    let iter = do 
           header <- textLHEHeader
           liftIO $ mapM_ (TIO.hPutStr oh) $ header 
           parseEvent =$ process
@@ -73,7 +79,24 @@ replace pids ifn ofn =
         processinside h = decayTopConduit =$ someAction h  
     flip runStateT (0::Int) (parseXmlFile ih iter)
     hPutStrLn oh "</LesHouchesEvents>\n\n"
- 
+ -}
+
+
+preserveHeaderAndProcessEvents :: (Handle -> Sink LHEventTop (StateT Int IO) ()) 
+                                  -> InFileHandle 
+                                  -> OutFileHandle 
+                                  ->  IO ()
+preserveHeaderAndProcessEvents someAction (InFile ih) (OutFile oh) = do 
+  let iter = do 
+        header <- textLHEHeader
+        liftIO $ mapM_ (TIO.hPutStr oh) $ header 
+        parseEvent =$ process
+      process = processinside oh
+      -- someAction h = doBranchE (checkAndFilterOnShell pids) (onShellAction h) (offShellAction h)
+      processinside h = decayTopConduit =$ someAction h
+  flip runStateT (0::Int) (parseXmlFile ih iter)
+  hPutStrLn oh "</LesHouchesEvents>\n\n"
+
 
 -- | 
 checkAndFilterOnShell :: [PDGID] 
