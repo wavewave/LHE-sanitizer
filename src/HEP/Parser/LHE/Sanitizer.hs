@@ -40,12 +40,21 @@ withRandomTempFile act = do
   removeFile tmpfile 
 
 
--- | sanitizing LHE file according to spec
-sanitizeLHEFile :: SanitizeType -> FilePath -> FilePath -> IO () 
-sanitizeLHEFile (Elim pids) ifp ofp = eliminate pids ifp ofp 
-sanitizeLHEFile (Replace rpidtable) ifp ofp = replace rpidtable ifp ofp
-sanitizeLHEFile Shuffle ifp ofp = shuffle ifp ofp 
-sanitizeLHEFile Blobize ifp ofp = blobize ifp ofp 
+-- | sanitize LHE file for one particular order
+sanitize1 :: SanitizeJob -> FilePath -> FilePath -> IO () 
+sanitize1 (Elim pids) ifp ofp = eliminate pids ifp ofp 
+sanitize1 (Replace rpidtable) ifp ofp = replace rpidtable ifp ofp
+sanitize1 Shuffle ifp ofp = shuffle ifp ofp 
+sanitize1 Blobize ifp ofp = blobize ifp ofp
+
+
+-- | sanitize LHE file for a given order of sanitizing steps 
+sanitize :: [SanitizeJob] -> FilePath -> FilePath -> IO ()
+sanitize [] _ _ = return ()
+sanitize (x:[]) ifp ofp  = sanitize1 x ifp ofp
+sanitize (x:xs) ifp ofp = withRandomTempFile $ \tmp -> sanitize1 x ifp tmp >> sanitize xs tmp ofp  
+
+{- 
 sanitizeLHEFile (ElimShuffle pids) ifp ofp = 
   withRandomTempFile $ \tmpfile -> do 
     eliminate pids ifp tmpfile 
@@ -54,6 +63,6 @@ sanitizeLHEFile (ReplaceShuffle rpidtable) ifp ofp =
   withRandomTempFile $ \tmpfile -> do 
     replace rpidtable ifp tmpfile 
     shuffle tmpfile ofp   
-
+-}
  
 
