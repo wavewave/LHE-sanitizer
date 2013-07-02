@@ -47,17 +47,22 @@ shuffle ifn ofn =
     mapM_ (hPrintEv oh) evs'
     hPutStrLn oh "</LesHouchesEvents>\n\n"
  
-
+-- | eliminate particular particles of specified PDGIDs
 eliminate :: [Int] -> FilePath -> FilePath -> IO () 
 eliminate pids ifn ofn = (fileProcInOut ifn ofn . preserveHeaderAndProcessEvents) $ \h ->
-                           doBranchE (checkAndFilterOnShell pids) (onShellAction h) (offShellAction h)
+                           doBranchE (checkAndFilterOnShell (Just pids)) (elimAction h) (preserveAction h)
 
 
--- | replace 
+
+-- | replace particular particle of specified PDGIDs with another designated particle 
 replace :: [(Int,Int)] -> FilePath -> FilePath -> IO () 
 replace pids ifn ofn = (fileProcInOut ifn ofn . preserveHeaderAndProcessEvents) $ \h -> 
                          awaitForever $ liftIO . replaceAction h pids
 
+-- | remove all the internal particles
+blobize :: FilePath -> FilePath -> IO ()
+blobize ifn ofn = (fileProcInOut ifn ofn . preserveHeaderAndProcessEvents) $ \h ->
+                    doBranchE (checkAndFilterOnShell Nothing) (elimAction h) (preserveAction h)
 
 
 preserveHeaderAndProcessEvents :: (Handle -> Sink LHEventTop (StateT Int IO) ()) 
@@ -70,19 +75,18 @@ preserveHeaderAndProcessEvents someAction (InFile ih) (OutFile oh) = do
         liftIO $ mapM_ (TIO.hPutStr oh) $ header 
         parseEvent =$ process
       process = processinside oh
-      -- someAction h = doBranchE (checkAndFilterOnShell pids) (onShellAction h) (offShellAction h)
       processinside h = decayTopConduit =$ someAction h
   flip runStateT (0::Int) (parseXmlFile ih iter)
   hPutStrLn oh "</LesHouchesEvents>\n\n"
 
 
 -- | 
-checkAndFilterOnShell :: [PDGID] 
+checkAndFilterOnShell :: Maybe [PDGID] 
                       -> LHEventTop 
                       -> Either LHEventTop LHEventTop 
                          -- ^ left is on-shell, right is off-shell
-checkAndFilterOnShell pids (LHEventTop ev pmap dtops) = 
-  let dtops' = filterOnShellFromDecayTop pids dtops 
+checkAndFilterOnShell mpids (LHEventTop ev pmap dtops) = 
+  let dtops' = filterOnShellFromDecayTop mpids dtops 
   in if (not.null) dtops'
        then Left (LHEventTop ev pmap dtops')
        else Right (LHEventTop ev pmap dtops')
@@ -97,13 +101,13 @@ replacePDGID pidlst ev@(LHEvent einfo pinfos) =
                  Just nid -> x { idup = nid } 
 
 
-filterOnShellFromDecayTop :: [PDGID] 
+filterOnShellFromDecayTop :: Maybe [PDGID]   -- ^ Nothing then filter all on-shell intermediates 
                          -> [DecayTop PtlIDInfo] 
                          -> [DecayTop PtlIDInfo]  
-filterOnShellFromDecayTop pids lst =
+filterOnShellFromDecayTop mpids lst =
   let worker x acc = 
         case x of 
-          Decay (PIDInfo pid' _, _) -> if (pid' `elem` pids) then x:acc else acc
+          Decay (PIDInfo pid' _, _) -> maybe (x:acc) (\pids->if (pid' `elem` pids) then x:acc else acc) mpids
           _ -> acc
   in  foldr worker [] lst 
 
@@ -111,14 +115,14 @@ getPtlID :: DecayTop PtlIDInfo -> PtlID
 getPtlID (Decay (pidinfo,_)) = ptlid . ptlinfo $ pidinfo 
 getPtlID x = error $ "in getPtlID " ++ (show x)
 
-offShellAction :: Handle -> LHEventTop -> IO () 
-offShellAction h (LHEventTop ev _pmap _dtops) = do
+preserveAction :: Handle -> LHEventTop -> IO () 
+preserveAction h (LHEventTop ev _pmap _dtops) = do
   hPutStrLn h "<event>"
   hPutStrLn h (formatLHEvent ev)
   hPutStrLn h "</event>"
 
-onShellAction :: Handle -> LHEventTop -> IO ()
-onShellAction h (LHEventTop ev pmap dtops) = do 
+elimAction :: Handle -> LHEventTop -> IO ()
+elimAction h (LHEventTop ev pmap dtops) = do 
   hPutStrLn h "<event>"
   case ev of 
     LHEvent einfo _ -> do

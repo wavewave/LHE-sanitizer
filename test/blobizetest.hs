@@ -8,6 +8,7 @@ main :: IO ()
 main = do 
   args <- getArgs 
   let inputlhe = args !! 0 
-      outputlhe = "/dev/stdout"
-  shuffle inputlhe outputlhe 
+      -- outputlhe = "/dev/stdout"
+      outputlhe = "ttt.lhe"
+  blobize inputlhe outputlhe 
 

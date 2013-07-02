@@ -31,5 +31,5 @@ fileProcInOut :: FilePath -> FilePath
               -> IO ()
 fileProcInOut ifn ofn action = 
   withFile ofn WriteMode $ \oh ->
-    withFile ifn WriteMode $ \ih ->
+    withFile ifn ReadMode $ \ih ->
       action (InFile ih) (OutFile oh)

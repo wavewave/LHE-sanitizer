@@ -45,6 +45,7 @@ sanitizeLHEFile :: SanitizeType -> FilePath -> FilePath -> IO ()
 sanitizeLHEFile (Elim pids) ifp ofp = eliminate pids ifp ofp 
 sanitizeLHEFile (Replace rpidtable) ifp ofp = replace rpidtable ifp ofp
 sanitizeLHEFile Shuffle ifp ofp = shuffle ifp ofp 
+sanitizeLHEFile Blobize ifp ofp = blobize ifp ofp 
 sanitizeLHEFile (ElimShuffle pids) ifp ofp = 
   withRandomTempFile $ \tmpfile -> do 
     eliminate pids ifp tmpfile 
@@ -53,7 +54,6 @@ sanitizeLHEFile (ReplaceShuffle rpidtable) ifp ofp =
   withRandomTempFile $ \tmpfile -> do 
     replace rpidtable ifp tmpfile 
     shuffle tmpfile ofp   
-
 
  
 

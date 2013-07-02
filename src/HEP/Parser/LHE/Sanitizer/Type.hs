@@ -22,6 +22,7 @@ import Data.Data
 data SanitizeType = Elim [Int] 
                   | Replace [(Int,Int)] 
                   | Shuffle 
+                  | Blobize
                   | ElimShuffle [Int]
                   | ReplaceShuffle [(Int,Int)]
                   deriving (Show,Typeable,Data)
