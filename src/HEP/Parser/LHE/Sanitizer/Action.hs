@@ -2,7 +2,7 @@
 
 -----------------------------------------------------------------------------
 -- |
--- Module      : HEP.Parser.LHE.Sanitizer.Shuffle
+-- Module      : HEP.Parser.LHE.Sanitizer.Action
 -- Copyright   : (c) 2013 Ian-Woo Kim
 --
 -- License     : GPL-3
@@ -47,7 +47,8 @@ shuffle ifn ofn =
     mapM_ (hPrintEv oh) evs'
     hPutStrLn oh "</LesHouchesEvents>\n\n"
  
--- | eliminate particular particles of specified PDGIDs
+-- | eliminate particular particles of specified PDGIDs. 
+--   Note : this seems to have bugs when having longer cascades!
 eliminate :: [Int] -> FilePath -> FilePath -> IO () 
 eliminate pids ifn ofn = (fileProcInOut ifn ofn . preserveHeaderAndProcessEvents) $ \h ->
                            doBranchE (checkAndFilterOnShell (Just pids)) (elimAction h) (preserveAction h)
@@ -62,7 +63,7 @@ replace pids ifn ofn = (fileProcInOut ifn ofn . preserveHeaderAndProcessEvents) 
 -- | remove all the internal particles
 blobize :: FilePath -> FilePath -> IO ()
 blobize ifn ofn = (fileProcInOut ifn ofn . preserveHeaderAndProcessEvents) $ \h ->
-                    doBranchE (checkAndFilterOnShell Nothing) (elimAction h) (preserveAction h)
+                    doBranchE (checkAndFilterOnShell Nothing) (blobAction h) (preserveAction h)
 
 
 preserveHeaderAndProcessEvents :: (Handle -> Sink LHEventTop (StateT Int IO) ()) 
@@ -130,6 +131,28 @@ elimAction h (LHEventTop ev pmap dtops) = do
           n = Prelude.length newpinfos
       (hPutStrLn h . formatLHEvent) (LHEvent einfo { nup = n }  newpinfos) 
   hPutStrLn h "</event>"
+
+blobAction :: Handle -> LHEventTop -> IO ()
+blobAction h t = do
+    let LHEventTop ev pmap dtops = go t
+    hPutStrLn h "<event>"
+    {- case ev of 
+     LHEvent einfo _ -> do
+        let newpinfos = cleanUpAll (ev,pmap,dtops)
+            n = Prelude.length newpinfos
+        (hPutStrLn h . formatLHEvent) (LHEvent einfo { nup = n }  newpinfos) -}
+    (hPutStrLn h . formatLHEvent) ev
+    hPutStrLn h "</event>"
+  where go (LHEventTop ev@(LHEvent einfo _) pmap dtops) = 
+          let newpinfos = cleanUpAll (ev,pmap,dtops)
+              n = Prelude.length newpinfos 
+              nev = LHEvent einfo { nup = n } newpinfos
+              ndtop = getDecayTop nev 
+          in case checkAndFilterOnShell Nothing ndtop of 
+               Left nndtop -> go nndtop 
+               Right nndtop' -> nndtop' 
+       
+
 
 replaceAction :: Handle -> [(Int,Int)] -> LHEventTop -> IO ()
 replaceAction h pids (LHEventTop ev _pmap _dtops) = do 

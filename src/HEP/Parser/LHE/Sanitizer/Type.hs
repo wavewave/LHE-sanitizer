@@ -19,11 +19,9 @@ module HEP.Parser.LHE.Sanitizer.Type where
 import Data.Data
 
 -- | sanitize actions (this is rather temporary) 
-data SanitizeJob = Elim [Int] 
+data SanitizeCmd = Eliminate [Int] 
                  | Replace [(Int,Int)] 
                  | Shuffle 
                  | Blobize
---                 | ElimShuffle [Int]
---                 | ReplaceShuffle [(Int,Int)]
                  deriving (Show,Typeable,Data)
 
