@@ -21,7 +21,7 @@ import qualified Data.Text.IO as TIO
 import System.IO
 import Text.XML.Conduit.Parse.Util
 -- 
-import Data.Conduit.Util as CU
+import Data.Conduit.Internal as CU
 import Data.Conduit.Util.Count 
 import HEP.Parser.LHE.Conduit
 import HEP.Parser.LHE.Type
